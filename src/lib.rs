@@ -1,14 +1,26 @@
-pub fn add(left: usize, right: usize) -> usize {
-    left + right
+use flowsnet_platform_sdk::logger;
+use serde_json::Value;
+use std::collections::HashMap;
+use webhook_flows::{request_received, send_response};
+
+#[no_mangle]
+#[tokio::main(flavor = "current_thread")]
+pub async fn run() -> anyhow::Result<()> {
+    request_received(|headers, qry, body| handler(headers, qry, body)).await;
+    Ok(())
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+async fn handler(headers: Vec<(String, String)>, qry: HashMap<String, Value>, _body: Vec<u8>) {
+    logger::init();
+    log::info!("Headers -- {:?}", headers);
 
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
+    let msg = qry.get("msg").unwrap();
+    // let msg = String::from_utf8(body).unwrap_or("".to_string());
+    let resp = format!("Welcome to flows.network.\nYou just said: '{}'.\nLearn more at: https://github.com/flows-network/hello-world\n", msg);
+
+    send_response(
+        200,
+        vec![(String::from("content-type"), String::from("text/html"))],
+        resp.as_bytes().to_vec(),
+    );
 }
