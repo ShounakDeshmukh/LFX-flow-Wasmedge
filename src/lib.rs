@@ -1,7 +1,14 @@
+use base64::{engine::general_purpose, Engine as _};
 use flowsnet_platform_sdk::logger;
 use serde_json::Value;
 use std::collections::HashMap;
 use webhook_flows::{request_received, send_response};
+//base64 encoder decoder
+
+struct MethodNMsg {
+    message: String,
+    method: u8,
+}
 
 #[no_mangle]
 #[tokio::main(flavor = "current_thread")]
@@ -14,13 +21,45 @@ async fn handler(headers: Vec<(String, String)>, qry: HashMap<String, Value>, _b
     logger::init();
     log::info!("Headers -- {:?}", headers);
 
-    let msg = qry.get("msg").unwrap();
-    // let msg = String::from_utf8(body).unwrap_or("".to_string());
-    let resp = format!("Welcome to flows.network.\nYou just said: '{}'.\nLearn more at: https://github.com/flows-network/hello-world\n", msg);
+    let msg_meth: MethodNMsg = match serde_json::from_slice(&body) {
+        Ok(data) => data,
+        Err(e) => {
+            log::error!("JSON Parse Error {}", e);
+            send_response(
+                400,
+                vec![(String::from("content-type"), String::from("text/plain"))],
+                "Bad Request".as_bytes().to_vec(),
+            );
+            return;
+        }
+    };
 
-    send_response(
-        200,
-        vec![(String::from("content-type"), String::from("text/html"))],
-        resp.as_bytes().to_vec(),
-    );
+    match msg_meth.method {
+        1 => {
+            let encoded = general_purpose::STANDARD_NO_PAD.encode(msg_meth.message);
+            send_response(
+                200,
+                vec![(String::from("content-type"), String::from("text/plain"))],
+                encoded.as_bytes().to_vec(),
+            );
+        }
+        //todo errorhandling
+        0 => {
+            let decoded = general_purpose::STANDARD_NO_PAD
+                .decode(msg_meth.message)
+                .unwrap();
+            send_response(
+                200,
+                vec![(String::from("content-type"), String::from("text/plain"))],
+                decoded,
+            );
+        }
+        _ => {
+            send_response(
+                400,
+                vec![(String::from("content-type"), String::from("text/plain"))],
+                "Invalid method".as_bytes().to_vec(),
+            );
+        }
+    }
 }
