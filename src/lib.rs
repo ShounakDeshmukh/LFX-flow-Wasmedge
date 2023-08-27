@@ -1,10 +1,12 @@
 use base64::{engine::general_purpose, Engine as _};
 use flowsnet_platform_sdk::logger;
+use serde::Deserialize;
 use serde_json::Value;
 use std::collections::HashMap;
 use webhook_flows::{request_received, send_response};
 //base64 encoder decoder
 
+#[derive(Debug, Deserialize)]
 struct MethodNMsg {
     message: String,
     method: u8,
@@ -17,7 +19,7 @@ pub async fn run() -> anyhow::Result<()> {
     Ok(())
 }
 
-async fn handler(headers: Vec<(String, String)>, qry: HashMap<String, Value>, _body: Vec<u8>) {
+async fn handler(headers: Vec<(String, String)>, _qry: HashMap<String, Value>, body: Vec<u8>) {
     logger::init();
     log::info!("Headers -- {:?}", headers);
 
