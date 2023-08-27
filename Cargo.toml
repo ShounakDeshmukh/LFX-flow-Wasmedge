@@ -6,3 +6,9 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+webhook-flows = "0.1"
+flowsnet-platform-sdk = "0.1"
+tokio_wasi = { version = "1.25.1", features = ["macros", "rt"] }
+serde_json = "1.0"
+log = "0.4"
+anyhow = "1"
